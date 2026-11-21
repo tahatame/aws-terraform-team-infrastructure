@@ -64,6 +64,14 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = {
+    Name = "main-nat-eip"
+  }
+}
+
 resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public_1.id
@@ -115,7 +123,6 @@ resource "aws_route_table_association" "public_2" {
   route_table_id = aws_route_table.public.id
 }
 
-
 resource "aws_route_table_association" "private_1" {
   subnet_id      = aws_subnet.private_1.id
   route_table_id = aws_route_table.private.id
@@ -149,6 +156,7 @@ resource "aws_network_acl_rule" "private_ingress_internal" {
   rule_action    = "allow"
   cidr_block     = "10.0.0.0/16"
 }
+
 resource "aws_network_acl_rule" "private_ingress_ephemeral" {
   network_acl_id = aws_network_acl.private.id
   rule_number    = 110
@@ -159,6 +167,7 @@ resource "aws_network_acl_rule" "private_ingress_ephemeral" {
   from_port      = 1024
   to_port        = 65535
 }
+
 resource "aws_network_acl_rule" "private_egress_internal" {
   network_acl_id = aws_network_acl.private.id
   rule_number    = 100
@@ -167,13 +176,25 @@ resource "aws_network_acl_rule" "private_egress_internal" {
   rule_action    = "allow"
   cidr_block     = "10.0.0.0/16"
 }
-resource "aws_network_acl_rule" "private_egress_internet" {
+
+resource "aws_network_acl_rule" "private_egress_https" {
   network_acl_id = aws_network_acl.private.id
   rule_number    = 110
   egress         = true
   protocol       = "6"
   rule_action    = "allow"
   cidr_block     = "0.0.0.0/0"
-  from_port      = 1024
-  to_port        = 65535
+  from_port      = 443
+  to_port        = 443
+}
+
+resource "aws_network_acl_rule" "private_egress_http" {
+  network_acl_id = aws_network_acl.private.id
+  rule_number    = 120
+  egress         = true
+  protocol       = "6"
+  rule_action    = "allow"
+  cidr_block     = "0.0.0.0/0"
+  from_port      = 80
+  to_port        = 80
 }
